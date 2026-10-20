@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Chromium (sandbox display)
+Exec=/opt/my-secure-claude-desktop/bin/sandbox-chromium %U
+Terminal=false
+Categories=Network;WebBrowser;
+MimeType=x-scheme-handler/unknown;x-scheme-handler/about;text/html;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;

@@ -1,0 +1,33 @@
+schemaVersion: "1"
+
+# Sandbox name
+name: claude-desktop-in-sbx
+
+# The workload kit is the base "agent": its name is the kit directory name.
+agent: kit
+
+# Relative paths resolve against the directory of this file.
+kits:
+  - source: ./kit
+    # Same as `--kit-arg …` on `sbx run`. Uncomment for an AZERTY (or other) keyboard:
+    # Claude Desktop then runs inside a nested labwc desktop that applies the layout.
+    # args:
+    #   nestedDesktop: "true"
+    #   keyboardLayout: fr
+    #   keyboardVariant: mac     # "mac" for an Apple keyboard, "" for a PC keyboard
+    #   claudeDesktopVersion: latest
+
+# The project Claude Desktop can see (Code tab). `.` is this folder; point it at
+# your own project instead, e.g. ~/projects/my-app.
+workspace: .
+
+sandboxOptions:
+  # Required: the Wayland socket that shows the Claude window on the host
+  # (`sbx run --display`). It can only be set when the sandbox is created.
+  display: true
+
+# https://docs.docker.com/ai/sandboxes/configuration/environment-files/
+# sbx env create    # shows the plan and asks for confirmation (--force to skip)
+# sbx env run       # re-attach (creates the sandbox first if it does not exist)
+# sbx env rm        # delete the sandbox. After editing the kit, rm then create again:
+#                   # an existing sandbox keeps the image it was built with.

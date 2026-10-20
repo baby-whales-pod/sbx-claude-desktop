@@ -1,0 +1,51 @@
+#!/bin/bash
+# Claude Desktop on the sandbox's Wayland display. The sandbox has no GPU:
+# without these flags Electron's GPU process crashes and the window stays blank.
+socket=${SANDBOX_WAYLAND_SOCKET:-/run/display/wayland-0}
+# Wayland clients resolve the socket as $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY;
+# an absolute WAYLAND_DISPLAY is also accepted.
+export WAYLAND_DISPLAY=$socket
+export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-$(dirname "$socket")}
+export ELECTRON_OZONE_PLATFORM_HINT=wayland
+unset DISPLAY
+# Links (the sign-in) must open with the kit's xdg-open, in the sandbox's
+# Chromium, never through sbx's host-forwarding shim in /usr/local/bin:
+# Claude Desktop's sign-in ends with a claude:// link that must come back here.
+# Forced here, whatever PATH the sandbox starts the entrypoint with.
+export PATH=/opt/my-secure-claude-desktop/bin:$PATH
+export BROWSER=/opt/my-secure-claude-desktop/bin/sandbox-chromium
+
+flags=(
+  --ozone-platform=wayland --enable-features=WaylandWindowDecorations
+  --disable-gpu --disable-gpu-compositing --disable-dev-shm-usage
+  --no-sandbox
+)
+
+# Claude Desktop keeps its sign-in in the desktop keyring (Secret Service over
+# D-Bus). The sandbox has neither, so start a session bus and an unlocked
+# gnome-keyring for this launch; its keyring file lives in ~/.local/share, so
+# the sign-in survives a restart of the app.
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+  exec dbus-run-session -- "$0" "$@"
+fi
+if ! pgrep -u "$(id -u)" -x gnome-keyring-d >/dev/null; then
+  # --unlock creates the "login" keyring on the first launch and unlocks it on
+  # the next ones. It ignores an empty password, so use a random one, made once
+  # per sandbox. Make "login" the default keyring, or libsecret prompts for a
+  # password for a new "Default Keyring".
+  keyrings=$HOME/.local/share/keyrings
+  mkdir -p "$keyrings" && chmod 0700 "$keyrings"
+  [ -s "$keyrings/.password" ] || (umask 077; head -c 32 /dev/urandom | base64 > "$keyrings/.password")
+  printf 'login' > "$keyrings/default"
+  eval "$(gnome-keyring-daemon --unlock --components=secrets < "$keyrings/.password")"
+  eval "$(gnome-keyring-daemon --start --components=secrets)"
+  export GNOME_KEYRING_CONTROL
+fi
+
+# Each launch is logged: the first one is the app, the next ones are claude://
+# links (from the sign-in) handed over to it.
+log=$HOME/.cache/my-secure-claude-desktop/launch.log
+mkdir -p "$(dirname "$log")"
+echo "$(date -Is) pid=$$ args=$* WAYLAND_DISPLAY=$WAYLAND_DISPLAY" >> "$log"
+
+exec /usr/lib/claude-desktop/claude-desktop "${flags[@]}" "$@"

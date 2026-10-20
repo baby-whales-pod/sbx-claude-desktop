@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Claude
+Comment=Claude Desktop, running inside a Docker Sandbox
+GenericName=AI Assistant
+Exec=/opt/my-secure-claude-desktop/bin/sandbox-claude-desktop %U
+Icon=claude-desktop
+Type=Application
+StartupNotify=true
+StartupWMClass=com.anthropic.Claude
+SingleMainWindow=true
+Categories=Utility;Development;
+MimeType=x-scheme-handler/claude;

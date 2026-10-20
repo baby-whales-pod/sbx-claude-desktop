@@ -1,0 +1,25 @@
+#!/bin/bash
+# A Chromium on the sandbox's Wayland display: the default browser in the
+# sandbox, so Claude Desktop's sign-in happens here and its claude:// link back
+# reaches the Claude Desktop of the sandbox, not an app on the host.
+export WAYLAND_DISPLAY=${SANDBOX_WAYLAND_SOCKET:-/run/display/wayland-0}
+unset DISPLAY
+# claude:// links from the sign-in go through the kit's xdg-open, to the
+# Claude Desktop of the sandbox.
+export PATH=/opt/my-secure-claude-desktop/bin:$PATH
+# Electron apps (Claude Desktop) leak their CHROME_DESKTOP; Chromium would then
+# think it is the claude:// handler and refuse to launch it.
+export CHROME_DESKTOP=sandbox-chromium.desktop
+
+chrome=$(ls -d /opt/ms-playwright/chromium-*/chrome-linux*/chrome 2>/dev/null | sort -V | tail -n 1)
+if [ -z "$chrome" ]; then
+  echo "sandbox-chromium: Playwright Chromium not found under /opt/ms-playwright" >&2
+  exit 1
+fi
+
+exec "$chrome" \
+  --user-data-dir="$HOME/.config/sandbox-chromium" \
+  --no-first-run --no-default-browser-check \
+  --no-sandbox --ozone-platform=wayland --disable-gpu --disable-gpu-compositing \
+  --disable-dev-shm-usage \
+  "$@"

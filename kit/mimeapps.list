@@ -1,0 +1,8 @@
+[Default Applications]
+x-scheme-handler/claude=com.anthropic.Claude.desktop
+x-scheme-handler/http=sandbox-chromium.desktop
+x-scheme-handler/https=sandbox-chromium.desktop
+text/html=sandbox-chromium.desktop
+application/xhtml+xml=sandbox-chromium.desktop
+x-scheme-handler/about=sandbox-chromium.desktop
+x-scheme-handler/unknown=sandbox-chromium.desktop

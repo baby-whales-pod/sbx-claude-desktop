@@ -1,0 +1,5 @@
+{
+  "AutoLaunchProtocolsFromOrigins": [
+    { "protocol": "claude", "allowed_origins": ["https://claude.ai", "https://claude.com"] }
+  ]
+}

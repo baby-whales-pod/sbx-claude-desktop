@@ -1,0 +1,22 @@
+#!/bin/bash
+# The kit's entrypoint: wait for the sandbox's Wayland display, then run Claude
+# Desktop in the foreground. The sandbox session ends when Claude Desktop quits.
+socket=${SANDBOX_WAYLAND_SOCKET:-/run/display/wayland-0}
+for _ in $(seq 1 120); do
+  [ -S "$socket" ] && break
+  sleep 1
+done
+if [ ! -S "$socket" ]; then
+  echo "my-secure-claude-desktop-session: no Wayland socket at $socket after 120s." >&2
+  echo "Did you create the sandbox with --display?" >&2
+  exit 1
+fi
+
+# With nestedDesktop=true, Claude Desktop runs inside labwc so that typing
+# follows keyboardLayout instead of the display's fixed US layout.
+if [ "${SANDBOX_NESTED_DESKTOP:-false}" = "true" ]; then
+  exec /opt/my-secure-claude-desktop/bin/sandbox-desktop \
+    /opt/my-secure-claude-desktop/bin/sandbox-claude-desktop "$@"
+fi
+
+exec /opt/my-secure-claude-desktop/bin/sandbox-claude-desktop "$@"

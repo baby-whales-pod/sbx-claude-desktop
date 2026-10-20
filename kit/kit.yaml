@@ -1,0 +1,82 @@
+# syntax=docker/sandbox-kit:3
+#
+# My Secure Claude Desktop: the Claude desktop app (Linux beta) running inside
+# a Docker Sandbox, drawn on the sandbox's Wayland display so that only the
+# Claude window shows up on the host, plus an in-sandbox Chromium so the
+# sign-in and its claude:// link back never leave the sandbox.
+# A workload built on the shell template with Claude Desktop as its entrypoint
+# in place of bash; `sbx exec` still gives a shell.
+#
+# Run it with:  sbx run --display ./kit [WORKSPACE]
+schemaVersion: "3"
+kind: workload
+displayName: My Secure Claude Desktop
+description: >-
+    The Claude desktop app (Linux beta) as the sandbox's entrypoint, on the sandbox's Wayland
+    display with software rendering, and an in-sandbox Chromium for the sign-in.
+# Replace with the repository this kit is published from.
+sourceUrl: https://github.com/docker/sandboxes
+licenses: [MIT]
+version: "0.1.0"
+args:
+    claudeDesktopVersion:
+        default: latest
+        pattern: '^(latest|[0-9]+\.[0-9]+\.[0-9]+)$'
+        description: Claude Desktop release to install from Anthropic's apt repository ("latest" or e.g. 2.42304.2)
+        buildArg: CLAUDE_DESKTOP_VERSION
+    playwrightVersion:
+        default: "1.63.0"
+        pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+        description: Playwright release whose Chromium build is installed for the sign-in
+        buildArg: PLAYWRIGHT_VERSION
+    waylandSocket:
+        default: /run/display/wayland-0
+        description: Wayland compositor socket that Claude Desktop and Chromium draw on
+        env: SANDBOX_WAYLAND_SOCKET
+    nestedDesktop:
+        default: "false"
+        pattern: '^(true|false)$'
+        description: Start Claude Desktop inside sandbox-desktop (labwc), so that it follows keyboardLayout
+        env: SANDBOX_NESTED_DESKTOP
+    keyboardLayout:
+        default: fr
+        pattern: '^[a-z]{2,3}(,[a-z]{2,3})*$'
+        description: XKB keyboard layout used by sandbox-desktop (e.g. fr, ch, de, us)
+        env: SANDBOX_KEYBOARD_LAYOUT
+    keyboardVariant:
+        default: mac
+        pattern: '^[A-Za-z0-9_-]*(,[A-Za-z0-9_-]*)*$'
+        description: XKB layout variant used by sandbox-desktop ("mac" for an Apple keyboard, empty for a PC keyboard)
+        env: SANDBOX_KEYBOARD_VARIANT
+capabilities:
+    - type: com.docker.sandbox/sbx@1
+    # Claude Desktop and Chromium are baked into the image at build, so there
+    # is no install phase to grant. These are the hosts the running app and
+    # the sign-in flow reach.
+    - type: com.docker.sandbox/network-policy@1
+      config:
+        runtime:
+            allow:
+                # Claude: app, API, sign-in, account and downloads.claude.ai
+                # (the Code tab fetches its Claude Code runtime there)
+                - api.anthropic.com
+                - anthropic.com
+                - "*.anthropic.com"
+                - claude.ai
+                - "*.claude.ai"
+                - claude.com
+                - "*.claude.com"
+                # Sign-in: Google, hCaptcha, and WorkOS SSO with Okta as the
+                # identity provider. Add other identity providers here as needed.
+                - accounts.google.com
+                - "*.gstatic.com"
+                - "*.googleusercontent.com"
+                - hcaptcha.com
+                - "*.hcaptcha.com"
+                - api.workos.com
+                - "*.okta.com"
+    - type: com.docker.sandbox/agent-context@1
+      config:
+        # Path relative to this kit directory; the sandbox-kit frontend stages it
+        # into the image and rewrites this field to the in-image path.
+        contentFile: my-secure-claude-desktop-context.md

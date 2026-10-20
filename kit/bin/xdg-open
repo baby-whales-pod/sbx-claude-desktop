@@ -1,0 +1,12 @@
+#!/bin/sh
+# Shadows the host-forwarding shim sbx writes to /usr/local/bin, so that links
+# open in the sandbox's Chromium. That's what Claude Desktop's sign-in needs:
+# the claude:// link it ends with must come back to the app in the sandbox.
+# (The Claude Code CLI doesn't need this: its /login callback is on localhost,
+# which sbx relays from the host browser.)
+# With no desktop environment detected, /usr/bin/xdg-open only uses the
+# registered URL handlers (such as claude://) when a display is set.
+export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-${SANDBOX_WAYLAND_SOCKET:-/run/display/wayland-0}}"
+log=$HOME/.cache/my-secure-claude-desktop/launch.log
+mkdir -p "$(dirname "$log")" && echo "$(date -Is) xdg-open $*" >> "$log"
+exec /usr/bin/xdg-open "$@"
